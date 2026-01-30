@@ -1,0 +1,15 @@
+{"timestamp": "2026-01-24T12:20:41.065720Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:20:41.067633Z", "level": "warning", "event": "GOOGLE_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:20:41.067633Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-24T12:20:41.068734Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-24T12:20:41.069728Z", "level": "warning", "event": "ASTRA_DB_APPLICATION_TOKEN is missing from environment"}
+{"timestamp": "2026-01-24T12:20:41.070735Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"timestamp": "2026-01-24T12:27:51.625652Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:27:51.626651Z", "level": "warning", "event": "GOOGLE_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:27:51.626651Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-24T12:27:51.627693Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-24T12:27:51.627693Z", "level": "warning", "event": "ASTRA_DB_APPLICATION_TOKEN is missing from environment"}
+{"timestamp": "2026-01-24T12:27:51.628654Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-01-24T12:27:51.634654Z", "level": "info", "event": "YAML config loaded"}
+{"model": "models/text-embedding-004", "timestamp": "2026-01-24T12:27:51.759644Z", "level": "info", "event": "Loading embedding model"}
+{"error": "Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.", "timestamp": "2026-01-24T12:28:04.129014Z", "level": "error", "event": "Error loading embedding model"}

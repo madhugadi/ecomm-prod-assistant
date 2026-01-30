@@ -1,0 +1,9 @@
+{"timestamp": "2026-01-24T22:11:43.190335Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T22:11:43.191260Z", "level": "info", "event": "GOOGLE_API_KEY loaded from environment"}
+{"timestamp": "2026-01-24T22:11:43.192261Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-24T22:11:43.193688Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-24T22:11:43.193688Z", "level": "info", "event": "ASTRA_DB_APPLICATION_TOKEN loaded from environment"}
+{"timestamp": "2026-01-24T22:11:43.196012Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-01-24T22:11:43.227013Z", "level": "info", "event": "YAML config loaded"}
+{"model": "sentence-transformers/all-MiniLM-L6-v2", "timestamp": "2026-01-24T22:11:43.274012Z", "level": "info", "event": "Loading HuggingFace embeddings"}
+{"error": "Could not import sentence_transformers python package. Please install it with `pip install sentence-transformers`.", "timestamp": "2026-01-24T22:11:43.278046Z", "level": "error", "event": "Error loading embedding model"}

@@ -1,0 +1,9 @@
+{"timestamp": "2026-01-24T12:34:33.932164Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:34:33.934162Z", "level": "warning", "event": "GOOGLE_API_KEY is missing from environment"}
+{"timestamp": "2026-01-24T12:34:33.935165Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-24T12:34:33.935165Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-24T12:34:33.936287Z", "level": "warning", "event": "ASTRA_DB_APPLICATION_TOKEN is missing from environment"}
+{"timestamp": "2026-01-24T12:34:33.939171Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-01-24T12:34:33.945160Z", "level": "info", "event": "YAML config loaded"}
+{"model": "models/text-embedding-004", "timestamp": "2026-01-24T12:34:33.965181Z", "level": "info", "event": "Loading embedding model"}
+{"error": "Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.", "timestamp": "2026-01-24T12:34:46.261697Z", "level": "error", "event": "Error loading embedding model"}

@@ -1,3 +1,4 @@
+/* Global */
 body, html {
     height: 100%;
     margin: 0;
@@ -5,6 +6,39 @@ body, html {
     font-family: 'Roboto', sans-serif;
 }
 
+/* Hero */
+.hero {
+    height: 90vh;
+    padding: 50px;
+    text-align: center;
+    background: linear-gradient(to right, #eef2f3, #8e9eab);
+}
+
+/* Floating Icon */
+.chatbot-icon {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #2874f0;
+    color: white;
+    border-radius: 50%;
+    padding: 15px;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Chat Popup */
+.chat-popup {
+    position: fixed;
+    bottom: 90px;
+    right: 30px;
+    width: 350px;
+    display: none;
+    z-index: 1001;
+}
+
+/* Chat Card */
 .chat {
     margin: auto;
 }
@@ -28,6 +62,7 @@ body, html {
     overflow-y: auto;
     background: #e9f3fb;
     padding: 20px;
+    height: 300px;
 }
 
 .card-footer {
@@ -37,6 +72,7 @@ body, html {
     padding: 10px;
 }
 
+/* Input */
 .type_msg {
     background-color: rgba(0, 0, 0, 0.3);
     color: white;
@@ -64,6 +100,7 @@ body, html {
     background-color: #4791ff;
 }
 
+/* Messages */
 .msg_cotainer {
     background: white;
     color: black;
@@ -76,7 +113,7 @@ body, html {
 }
 
 .msg_cotainer_send {
-    background: #ffe033; /* Flipkart Yellow */
+    background: #ffe033;
     padding: 10px 15px;
     border-radius: 20px;
     margin-right: 10px;
@@ -85,7 +122,8 @@ body, html {
     max-width: 70%;
 }
 
-.msg_time, .msg_time_send {
+.msg_time,
+.msg_time_send {
     position: absolute;
     font-size: 10px;
     color: rgba(0, 0, 0, 0.4);
@@ -101,7 +139,9 @@ body, html {
     bottom: -18px;
 }
 
-.img_cont, .img_cont_msg img {
+/* Avatar */
+.img_cont,
+.img_cont_msg img {
     width: 45px;
     height: 45px;
 }
@@ -128,16 +168,17 @@ body, html {
     margin: 0;
 }
 
-/* Optional - smooth message scroll */
+/* Smooth scroll */
 #messageFormeight {
     scroll-behavior: smooth;
 }
 
-/* Mobile Responsive */
-@media(max-width: 576px) {
+/* Mobile */
+@media (max-width: 576px) {
     .chat {
         padding: 10px;
     }
+
     .card {
         height: 90vh;
     }

@@ -1,0 +1,19 @@
+{"timestamp": "2026-01-26T06:31:24.670908Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-26T06:31:24.671907Z", "level": "info", "event": "GOOGLE_API_KEY loaded from environment"}
+{"timestamp": "2026-01-26T06:31:24.671907Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-26T06:31:24.671907Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-26T06:31:24.672907Z", "level": "info", "event": "ASTRA_DB_APPLICATION_TOKEN loaded from environment"}
+{"timestamp": "2026-01-26T06:31:24.674907Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-01-26T06:31:24.676906Z", "level": "info", "event": "YAML config loaded"}
+{"model": "sentence-transformers/all-MiniLM-L6-v2", "timestamp": "2026-01-26T06:31:24.679905Z", "level": "info", "event": "Loading HuggingFace embeddings"}
+Use pytorch device_name: cpu
+Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+vector store default init, collection 'ecommercedata'
+No valid keyspace found in environment variable.
+Detecting API environment 'prod' from supplied endpoint
+createCollection('ecommercedata')
+HTTP Request: POST https://b6a3bca4-bcdc-46bf-8372-f92f47b30414-us-east-2.apps.astra.datastax.com/api/json/v1/firstdb123 "HTTP/1.1 200 OK"
+finished createCollection('ecommercedata')
+cursor fetching a page: (empty page state) from ecommercedata
+HTTP Request: POST https://b6a3bca4-bcdc-46bf-8372-f92f47b30414-us-east-2.apps.astra.datastax.com/api/json/v1/firstdb123/ecommercedata "HTTP/1.1 200 OK"
+cursor finished fetching a page: (empty page state) from ecommercedata

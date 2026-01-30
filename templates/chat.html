@@ -4,76 +4,65 @@
     <meta charset="UTF-8">
     <title>ShopBuddy</title>
 
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+
     <!-- Bootstrap & Icons -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+          crossorigin="anonymous">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
 
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
 
-    <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(to right, #26333D, #323741, #21214E);
-        }
+<body>
 
-        /* Hero */
-        .hero {
-            height: 90vh;
-            padding: 50px;
-            text-align: center;
-            background: linear-gradient(to right, #eef2f3, #8e9eab);
-        }
+<!-- Hero Section -->
+<div class="hero">
+    <h1>Welcome to ShopBuddy</h1>
+    <p>Your smart shopping assistant</p>
+</div>
 
-        /* Floating Icon */
-        .chatbot-icon {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: #2874f0;
-            color: white;
-            border-radius: 50%;
-            padding: 15px;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
+<!-- Floating Chat Icon -->
+<div class="chatbot-icon">
+    <i class="fas fa-comments"></i>
+</div>
 
-        /* Chat Popup */
-        .chat-popup {
-            position: fixed;
-            bottom: 90px;
-            right: 30px;
-            width: 350px;
-            display: none;
-            z-index: 1001;
-        }
+<!-- Chat Popup -->
+<div class="chat-popup">
+    <div class="card chat">
+        <div class="card-header">
+            <div class="user_info">
+                <span>ShopBuddy</span>
+                <p>Online</p>
+            </div>
+        </div>
 
-        .card {
-            height: 80vh;
-            border-radius: 20px;
-            background-color: rgba(0,0,0,0.4);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-        }
+        <div class="card-body msg_card_body" id="messageFormeight">
+            <!-- Messages dynamically injected -->
+        </div>
 
-        .card-header {
-            background-color: #2874f0;
-            color: white;
-            border-radius: 20px 20px 0 0;
-            padding: 15px;
-        }
+        <div class="card-footer">
+            <div class="input-group">
+                <input type="text"
+                       class="form-control type_msg"
+                       placeholder="Type your message..." />
+                <div class="input-group-append">
+                    <button class="send_btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        .msg_card_body {
-            background: #e9f3fb;
-            padding: 20px;
-            overflow-y: auto;
-            height: 300px;
-        }
-
-        .card-footer {
-            background: white;
-            border-radius: 0 0 20px 20px;
-            padding: 10px;
-        }
+</body>
+</html>

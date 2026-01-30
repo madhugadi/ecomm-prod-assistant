@@ -1,0 +1,8 @@
+{"timestamp": "2026-01-26T06:25:06.221797Z", "level": "warning", "event": "OPENAI_API_KEY is missing from environment"}
+{"timestamp": "2026-01-26T06:25:06.221797Z", "level": "info", "event": "GOOGLE_API_KEY loaded from environment"}
+{"timestamp": "2026-01-26T06:25:06.222788Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-01-26T06:25:06.222788Z", "level": "info", "event": "ASTRA_DB_API_ENDPOINT loaded from environment"}
+{"timestamp": "2026-01-26T06:25:06.223787Z", "level": "info", "event": "ASTRA_DB_APPLICATION_TOKEN loaded from environment"}
+{"timestamp": "2026-01-26T06:25:06.224787Z", "level": "info", "event": "ASTRA_DB_KEYSPACE loaded from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-01-26T06:25:06.252784Z", "level": "info", "event": "YAML config loaded"}
+{"model": "sentence-transformers/all-MiniLM-L6-v2", "timestamp": "2026-01-26T06:25:06.257784Z", "level": "info", "event": "Loading HuggingFace embeddings"}
