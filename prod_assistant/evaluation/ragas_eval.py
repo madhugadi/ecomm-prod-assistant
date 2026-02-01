@@ -1,52 +1,63 @@
+import asyncio
+import grpc.experimental.aio as grpc_aio
+
+grpc_aio.init_grpc_aio()
+
 from ragas import SingleTurnSample
 from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingWrapper
-from ragas.metrics import LLMContextPrecisionWithoutReference, LLMResponseRelevancy
-import grpc.experimental.aio as grpc_aio
-grpc_aio.init_grpc_aio()
+from ragas.metrics import (
+    context_precision,
+    answer_relevancy,
+)
+
 from prod_assistant.utils.model_loader import ModelLoader
 
-import grpc.experimental.aio as grpc_aio
-grpc_aio.init_grpc_aio()
-model_loader=ModelLoader()
+
+model_loader = ModelLoader()
 
 
-def evaluate_context_precision(query, response, retrieved_context):
-    try:
-        sample = SingleTurnSample(
-            user_input=query,
-            response=response,
-            retrieved_contexts=retrieved_context,
+# -------------------------------------------------------------------
+# Context Precision (NO reference answer)
+# -------------------------------------------------------------------
+def evaluate_context_precision(query: str, response: str, retrieved_contexts: list[str]):
+    sample = SingleTurnSample(
+        user_input=query,
+        response=response,
+        retrieved_contexts=retrieved_contexts,
+    )
+
+    async def _run():
+        llm = model_loader.load_llm()
+        evaluator_llm = LangchainLLMWrapper(llm)
+
+        metric = context_precision(llm=evaluator_llm)
+        return await metric.single_turn_ascore(sample)
+
+    return asyncio.run(_run())
+
+
+# -------------------------------------------------------------------
+# Response Relevancy (LLM + embeddings)
+# -------------------------------------------------------------------
+def evaluate_response_relevancy(query: str, response: str, retrieved_contexts: list[str]):
+    sample = SingleTurnSample(
+        user_input=query,
+        response=response,
+        retrieved_contexts=retrieved_contexts,
+    )
+
+    async def _run():
+        llm = model_loader.load_llm()
+        evaluator_llm = LangchainLLMWrapper(llm)
+
+        # ✅ RAW LangChain embeddings (NO adapter, NO wrapper)
+        embeddings = model_loader.load_embeddings()
+
+        metric = answer_relevancy(
+            llm=evaluator_llm,
+            embeddings=embeddings,
         )
 
-        async def main():
-            llm = model_loader.load_llm()
-            evaluator_llm = LangchainLLMWrapper(llm)
-            context_precision = LLMContextPrecisionWithoutReference(llm=evaluator_llm)
-            result = await context_precision.single_turn_ascore(sample)
-            return result
+        return await metric.single_turn_ascore(sample)
 
-        return asyncio.run(main())
-    except Exception as e:
-        return e
-
-def evaluate_response_relevancy(query, response, retrieved_context):
-    try:
-        sample = SingleTurnSample(
-            user_input=query,
-            response=response,
-            retrieved_contexts=retrieved_context,
-        )
-
-        async def main():
-            llm = model_loader.load_llm()
-            evaluator_llm = LangchainLLMWrapper(llm)
-            embedding_model = model_loader.load_embeddings()
-            evaluator_embeddings = LangchainEmbeddingsWrapper(embedding_model)
-            scorer = ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_embeddings)
-            result = await scorer.single_turn_ascore(sample)
-            return result
-
-        return asyncio.run(main())
-    except Exception as e:
-        return e
+    return asyncio.run(_run())

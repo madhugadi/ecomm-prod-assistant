@@ -4,13 +4,15 @@ from dotenv import load_dotenv
 
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
+from langchain.retrievers.document_compressors import LLMChainFilter
+from langchain.retrievers import ContextualCompressionRetriever
 
 from prod_assistant.utils.config_loader import load_config
 from prod_assistant.utils.model_loader import ModelLoader
-
-from langchain.retrievers.document_compressors import LLMChainFilter
-from langchain.retrievers import ContextualCompressionRetriever
-from evaluation.ragas_eval import evaluate_context_precision, evaluate_response_relevancy
+from prod_assistant.evaluation.ragas_eval import (
+    evaluate_context_precision,
+    evaluate_response_relevancy,
+)
 
 
 class Retriever:
@@ -18,8 +20,10 @@ class Retriever:
         self.model_loader = ModelLoader()
         self.config = load_config()
         self._load_env_variables()
+
+        
         self.vstore = None
-        self.retriever = None
+        self.retriever_instance = None
 
     def _load_env_variables(self):
         load_dotenv()
@@ -40,40 +44,49 @@ class Retriever:
         self.db_application_token = os.getenv("ASTRA_DB_APPLICATION_TOKEN").strip()
         self.db_keyspace = os.getenv("ASTRA_DB_KEYSPACE").strip()
 
-    def load_retriever(self):
-        """_summary_
-        """
-        if not self.vstore:
+    def load_retriever(self) -> ContextualCompressionRetriever:
+        """Lazy-load and cache the retriever"""
+
+        # -------------------------------
+        # Vector store (loaded once)
+        # -------------------------------
+        if self.vstore is None:
             collection_name = self.config["astra_db"]["collection_name"]
-            
-            self.vstore =AstraDBVectorStore(
-                embedding= self.model_loader.load_embeddings(),
+
+            self.vstore = AstraDBVectorStore(
+                embedding=self.model_loader.load_embeddings(),
                 collection_name=collection_name,
                 api_endpoint=self.db_api_endpoint,
                 token=self.db_application_token,
                 namespace=self.db_keyspace,
-                )
-        if not self.retriever_instance:
-            top_k = self.config["retriever"]["top_k"] if "retriever" in self.config else 3
-            
-            mmr_retriever=self.vstore.as_retriever(
-                search_type="mmr",
-                search_kwargs={"k": top_k,
-                                "fetch_k": 20,
-                                "lambda_mult": 0.7,
-                                "score_threshold": 0.6
-                               })
-            print("Retriever loaded successfully.")
-            
-            llm = self.model_loader.load_llm()
-            
-            compressor=LLMChainFilter.from_llm(llm)
-            
-            self.retriever_instance = ContextualCompressionRetriever(
-                base_compressor=compressor, 
-                base_retriever=mmr_retriever
             )
-            
+
+        # -------------------------------
+        # Retriever (loaded once)
+        # -------------------------------
+        if self.retriever_instance is None:
+            top_k = self.config.get("retriever", {}).get("top_k", 3)
+
+            base_retriever = self.vstore.as_retriever(
+                search_type="mmr",
+                search_kwargs={
+                    "k": top_k,
+                    "fetch_k": 20,
+                    "lambda_mult": 0.7,
+                    "score_threshold": 0.6,
+                },
+            )
+
+            llm = self.model_loader.load_llm()
+            compressor = LLMChainFilter.from_llm(llm)
+
+            self.retriever_instance = ContextualCompressionRetriever(
+                base_retriever=base_retriever,
+                base_compressor=compressor,
+            )
+
+            print("Retriever loaded successfully.")
+
         return self.retriever_instance
 
     def call_retriever(self, user_query: str) -> List[Document]:
@@ -81,10 +94,15 @@ class Retriever:
         return retriever.invoke(user_query)
 
 
+# ---------------------------------------------------------
+# Local test
+# ---------------------------------------------------------
 if __name__ == "__main__":
     retriever_obj = Retriever()
-    user_query = "hows the performance of  iPhone 15"
+    user_query = "How is the performance of the iPhone 15?"
     results = retriever_obj.call_retriever(user_query)
 
     for idx, doc in enumerate(results):
-        print(f"Result {idx}:\n{doc.page_content}\nMetadata: {doc.metadata}\n")
+        print(f"\nResult {idx}")
+        print(doc.page_content)
+        print("Metadata:", doc.metadata)
