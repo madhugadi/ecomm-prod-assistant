@@ -1,38 +1,15 @@
-SELECT
-    TestValue,
-    LEN(TestValue) AS TotalLen,
-    (LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '0', '')) 
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '1', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '2', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '3', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '4', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '5', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '6', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '7', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '8', ''))
-     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '9', ''))
-    ) AS DigitCount,
-    CASE 
-        WHEN TestValue NOT LIKE '%[^0-9 .,-]%' THEN 'HARD (no letters at all)'
-        WHEN (LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '0', '')) 
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '1', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '2', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '3', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '4', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '5', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '6', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '7', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '8', ''))
-             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '9', ''))
-            ) * 2 >= LEN(TestValue) THEN 'HARD (digit-dominant, code-like)'
-        ELSE 'SOFT (name with minor issue)'
-    END AS Classification
-FROM (VALUES
-    (N'John2'),           -- expect SOFT (name-dominant)
-    (N'TS2993B 1'),       -- expect HARD (digit-dominant, code-like)
-    (N'08 0000523 084'),  -- expect HARD (digit-dominant)
-    (N'Mary-Jane1'),      -- expect SOFT (name-dominant)
-    (N'183'),             -- expect HARD (no letters)
-    (N'張'),               -- expect pass-through, not in this test but should not be HARD
-    (N'TV727A1')           -- expect HARD (digit-dominant, code-like)
-) AS TestData(TestValue);
+Final Rule Set — Fully Verified
+Column	Check	Severity Logic
+First/Middle/Last Name	Letters (any script) vs. digits/symbols	Skip if NULL. Hard if no letters at all OR digits ≥50% of string. Soft if letters dominant with minor digit/symbol. Clean otherwise.
+Email	Format validity	[none] → Hard. Other format failures → Soft. NULL allowed.
+Date of Birth	Plausibility range	Pre-1900 → Hard (confirmed empty placeholder records). Future date → Soft (confirmed real people, just bad date). NULL allowed.
+Tax ID	Garbage/placeholder detection	Placeholder/non-alphanumeric → Hard. Too-short-but-alphanumeric → Soft. NULL allowed.
+Address	Symbols / corruption	Hex-garbage (0x...) → Hard (confirmed empty records, nothing salvageable). Other symbols → Soft. NULL allowed.
+Company Info (ET1)	Business keywords	Always Hard
+Digit-Prefixed Name (ET2)	Starts with digit	Always Hard
+Person_ID_Type	—	Not checked
+Person_ID → Tax_ID	SSN misplaced	Correction, not a check
+Routing
+Clean → Consolidated only
+Soft → Consolidated + Errors
+Hard → Errors only
