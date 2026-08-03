@@ -1,1 +1,16 @@
 
+SELECT TOP 30
+    PERSON_ADDRESS_STREET,
+    PERSON_ADDRESS_LINE2,
+    PERSON_ADDRESS_CITY,
+    PERSON_ADDRESS_STATE,
+    PERSON_ADDRESS_ZIP,
+    PERSON_ADDRESS_COUNTRY
+FROM dbo.Bronze_PII_Table_Raw
+WHERE (PERSON_ADDRESS_STREET LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+   OR (PERSON_ADDRESS_LINE2 LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+   OR (PERSON_ADDRESS_CITY LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+   OR (PERSON_ADDRESS_STATE LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+   OR (PERSON_ADDRESS_ZIP LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+   OR (PERSON_ADDRESS_COUNTRY LIKE '%[<>{}\[\]^~`|@*=_]%' ESCAPE '\')
+ORDER BY NEWID();
