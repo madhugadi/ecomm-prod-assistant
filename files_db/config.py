@@ -1,22 +1,38 @@
 SELECT
     TestValue,
-    CASE WHEN TestValue NOT LIKE '%[^0-9 .,-]%' 
-         THEN 'HARD (no letters of any script)' 
-         ELSE 'NOT HARD (has letters - some script)' 
+    LEN(TestValue) AS TotalLen,
+    (LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '0', '')) 
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '1', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '2', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '3', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '4', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '5', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '6', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '7', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '8', ''))
+     + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '9', ''))
+    ) AS DigitCount,
+    CASE 
+        WHEN TestValue NOT LIKE '%[^0-9 .,-]%' THEN 'HARD (no letters at all)'
+        WHEN (LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '0', '')) 
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '1', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '2', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '3', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '4', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '5', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '6', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '7', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '8', ''))
+             + LEN(TestValue) - LEN(REPLACE(TestValue COLLATE Latin1_General_BIN, '9', ''))
+            ) * 2 >= LEN(TestValue) THEN 'HARD (digit-dominant, code-like)'
+        ELSE 'SOFT (name with minor issue)'
     END AS Classification
 FROM (VALUES
-    (N'張'),                    -- Chinese, should NOT be Hard
-    (N'振华'),                  -- Chinese, should NOT be Hard
-    (N'長島'),                  -- Japanese, should NOT be Hard
-    (N'キレイコ'),               -- Japanese katakana, should NOT be Hard
-    (N'恋'),                    -- Chinese/Japanese, should NOT be Hard
-    (N'黄'),                    -- Chinese, should NOT be Hard
-    (N'Hübner'),                -- German accented, should NOT be Hard
-    (N'Μαγγανά'),               -- Greek, should NOT be Hard
-    (N'183'),                   -- pure digits, SHOULD be Hard
-    (N'1000645914'),            -- pure digits, SHOULD be Hard
-    (N'100005171'),             -- pure digits, SHOULD be Hard
-    (N'05 14'),                 -- digits + space, SHOULD be Hard
-    (N'TS2993B 1'),             -- has Latin letters mixed in, should NOT be Hard
-    (N'.')                      -- just punctuation, SHOULD be Hard
+    (N'John2'),           -- expect SOFT (name-dominant)
+    (N'TS2993B 1'),       -- expect HARD (digit-dominant, code-like)
+    (N'08 0000523 084'),  -- expect HARD (digit-dominant)
+    (N'Mary-Jane1'),      -- expect SOFT (name-dominant)
+    (N'183'),             -- expect HARD (no letters)
+    (N'張'),               -- expect pass-through, not in this test but should not be HARD
+    (N'TV727A1')           -- expect HARD (digit-dominant, code-like)
 ) AS TestData(TestValue);
