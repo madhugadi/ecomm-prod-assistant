@@ -1,20 +1,22 @@
-SELECT TOP 30
-    PERSON_FIRST_NAME,
-    PERSON_MIDDLE_NAME,
-    PERSON_LAST_NAME,
-    PERSON_EMAIL,
-    PERSON_DATE_OF_BIRTH,
-    PERSON_TAX_ID,
-    PERSON_ADDRESS_FULL,
-    RECORD_TYPE
-FROM dbo.Bronze_PII_Table_Raw
-WHERE (
-    (PERSON_FIRST_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_FIRST_NAME)) <> ''
-     AND (PERSON_FIRST_NAME LIKE '%[0-9]%' OR PERSON_FIRST_NAME LIKE '%[^a-zA-Z '' -]%')
-     AND PERSON_FIRST_NAME NOT LIKE '%[a-zA-Z]%')
-    OR
-    (PERSON_LAST_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_LAST_NAME)) <> ''
-     AND (PERSON_LAST_NAME LIKE '%[0-9]%' OR PERSON_LAST_NAME LIKE '%[^a-zA-Z '' -]%')
-     AND PERSON_LAST_NAME NOT LIKE '%[a-zA-Z]%')
-)
-ORDER BY NEWID();
+SELECT
+    TestValue,
+    CASE WHEN TestValue NOT LIKE '%[^0-9 .,-]%' 
+         THEN 'HARD (no letters of any script)' 
+         ELSE 'NOT HARD (has letters - some script)' 
+    END AS Classification
+FROM (VALUES
+    (N'張'),                    -- Chinese, should NOT be Hard
+    (N'振华'),                  -- Chinese, should NOT be Hard
+    (N'長島'),                  -- Japanese, should NOT be Hard
+    (N'キレイコ'),               -- Japanese katakana, should NOT be Hard
+    (N'恋'),                    -- Chinese/Japanese, should NOT be Hard
+    (N'黄'),                    -- Chinese, should NOT be Hard
+    (N'Hübner'),                -- German accented, should NOT be Hard
+    (N'Μαγγανά'),               -- Greek, should NOT be Hard
+    (N'183'),                   -- pure digits, SHOULD be Hard
+    (N'1000645914'),            -- pure digits, SHOULD be Hard
+    (N'100005171'),             -- pure digits, SHOULD be Hard
+    (N'05 14'),                 -- digits + space, SHOULD be Hard
+    (N'TS2993B 1'),             -- has Latin letters mixed in, should NOT be Hard
+    (N'.')                      -- just punctuation, SHOULD be Hard
+) AS TestData(TestValue);
