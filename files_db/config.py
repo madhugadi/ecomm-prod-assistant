@@ -1,9 +1,4 @@
-/******************************************************************************
- Object: Table [dbo].[Bronze_PII_Errors]
- Purpose: Holds records from Bronze_PII_Table_Raw that failed one or more
-          data quality checks during Bronze Raw -> Bronze Consolidated load.
-          Same columns/types as Bronze_PII_Table_Raw, plus error tracking.
-******************************************************************************/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
