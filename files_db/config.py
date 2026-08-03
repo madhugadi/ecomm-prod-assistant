@@ -1,21 +1,14 @@
-SELECT
-    COUNT(*) AS TotalNonNullEmail,
+Data Type Checks Summary
+Column	Check	Hard (excluded from Consolidated)	Soft (still goes to Consolidated)
+First Name	Digits/special characters	No letters at all	Has letters + digit/symbol
+Middle Name	Digits/special characters	No letters at all	Has letters + digit/symbol
+Last Name	Digits/special characters	No letters at all	Has letters + digit/symbol
+Email	Format validation	No @ sign, or no letters at all	Has @ and letters, but still malformed
+Date of Birth	Future date or before 1900-01-01	Always Hard (no soft tier)	—
+Tax ID	Format/garbage check	Placeholder or garbage characters	Too short but alphanumeric
+Address (all sub-fields)	Special characters	Hex-garbage pattern (0x...)	Other disallowed symbols
+Person_First/Middle/Last Name	Company-like keywords (LLC, INC, CORP, DBA, etc.)	Always Hard — RECORD_TYPE = Person only	—
+Person_ID_Type	—	Not checked (informational only)	—
+Person_ID	If SSN pattern found → moved to Tax_ID, cleared from Person_ID	Correction, not a check	—
 
-    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '%[a-zA-Z]%'
-        THEN 1 ELSE 0 END) AS Hard_NoLettersAtAll,
-
-    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '%@%'
-              AND PERSON_EMAIL LIKE '%[a-zA-Z]%'
-        THEN 1 ELSE 0 END) AS Hard_NoAtSign_ButHasLetters,
-
-    SUM(CASE WHEN PERSON_EMAIL LIKE '%@%'
-              AND PERSON_EMAIL LIKE '%[a-zA-Z]%'
-              AND (
-                    PERSON_EMAIL LIKE '%@%@%'
-                 OR PERSON_EMAIL LIKE '% %'
-                 OR PERSON_EMAIL NOT LIKE '_%@_%.__%'
-              )
-        THEN 1 ELSE 0 END) AS Soft_HasAtAndLetters_ButMalformed
-
-FROM dbo.Bronze_PII_Table_Raw
-WHERE PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PERSON_EMAIL)) <> '';
+Rule: Hard → record excluded from Consolidated, goes to Errors only. Soft → record still goes to Consolidated, also logged in Errors for visibility.
