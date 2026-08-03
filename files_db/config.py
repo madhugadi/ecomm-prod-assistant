@@ -1,40 +1,21 @@
 SELECT
     COUNT(*) AS TotalNonNullEmail,
 
-    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '_%@_%.__%'
-              OR PERSON_EMAIL LIKE '%@%@%'
-              OR PERSON_EMAIL LIKE '% %'
-        THEN 1 ELSE 0 END) AS TotalFailedCheck,
+    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '%[a-zA-Z]%'
+        THEN 1 ELSE 0 END) AS Hard_NoLettersAtAll,
 
-    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '%@%' 
-        THEN 1 ELSE 0 END) AS Hard_NoAtSignAtAll,
+    SUM(CASE WHEN PERSON_EMAIL NOT LIKE '%@%'
+              AND PERSON_EMAIL LIKE '%[a-zA-Z]%'
+        THEN 1 ELSE 0 END) AS Hard_NoAtSign_ButHasLetters,
 
-    SUM(CASE WHEN PERSON_EMAIL LIKE '%@%' 
+    SUM(CASE WHEN PERSON_EMAIL LIKE '%@%'
+              AND PERSON_EMAIL LIKE '%[a-zA-Z]%'
               AND (
-                    PERSON_EMAIL LIKE '%@%@%' 
-                 OR PERSON_EMAIL LIKE '% %' 
+                    PERSON_EMAIL LIKE '%@%@%'
+                 OR PERSON_EMAIL LIKE '% %'
                  OR PERSON_EMAIL NOT LIKE '_%@_%.__%'
               )
-        THEN 1 ELSE 0 END) AS Soft_HasAtButMalformed
+        THEN 1 ELSE 0 END) AS Soft_HasAtAndLetters_ButMalformed
 
 FROM dbo.Bronze_PII_Table_Raw
 WHERE PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PERSON_EMAIL)) <> '';
-
-SELECT
-    SUM(CASE WHEN PERSON_DATE_OF_BIRTH > CAST(GETDATE() AS DATE) 
-        THEN 1 ELSE 0 END) AS Hard_FutureDate,
-
-    SUM(CASE WHEN PERSON_DATE_OF_BIRTH < '1900-01-01' 
-        THEN 1 ELSE 0 END) AS Hard_Pre1900,
-
-    SUM(CASE WHEN PERSON_DATE_OF_BIRTH >= '1900-01-01' 
-              AND PERSON_DATE_OF_BIRTH <= DATEADD(YEAR, -110, CAST(GETDATE() AS DATE))
-        THEN 1 ELSE 0 END) AS Soft_Over110ButAfter1900,
-
-    SUM(CASE WHEN PERSON_DATE_OF_BIRTH >= '1900-01-01' 
-              AND PERSON_DATE_OF_BIRTH <= CAST(GETDATE() AS DATE)
-              AND PERSON_DATE_OF_BIRTH > DATEADD(YEAR, -110, CAST(GETDATE() AS DATE))
-        THEN 1 ELSE 0 END) AS Clean_NormalRange
-
-FROM dbo.Bronze_PII_Table_Raw
-WHERE PERSON_DATE_OF_BIRTH IS NOT NULL;
