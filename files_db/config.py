@@ -5,7 +5,7 @@ STAGES = [
         "key": "bronze_raw",
         "label": "Bronze Raw",
         "sublabel": "Raw ingested records",
-        "description": "Raw records loaded directly from staging, organized by batch code. No processing has been applied yet.",
+        "description": "Raw records loaded directly from staging. No processing has been applied yet.",
         "table": "dbo.Bronze_PII_Table_Raw",
     },
     {
