@@ -1,3 +1,17 @@
+/******************************************************************************
+ TEST VERSION - reads from real Bronze_PII_Table_Raw (read-only, safe),
+ writes to _TEST copies of Consolidated and Errors only.
+
+ FIX APPLIED (ETL_LOAD_DATE only, no other logic changed):
+ 1. Step 3 (Consolidated insert) - changed ISNULL(C.ETL_LOAD_DATE, SYSDATETIME())
+    to a direct pass-through of C.ETL_LOAD_DATE. Raw's ETL_LOAD_DATE is NOT NULL
+    with zero actual nulls, so a fallback would silently mask a real data
+    problem if one ever occurred rather than surfacing it.
+ 2. Step 4 (Errors_TEST insert) - ETL_LOAD_DATE was missing entirely from the
+    column list / SELECT, causing error 515 (Cannot insert the value NULL into
+    column 'ETL_LOAD_DATE') whenever a record failed a Hard check and was
+    routed to Errors. Added as a direct pass-through of C.ETL_LOAD_DATE.
+******************************************************************************/
 IF OBJECT_ID('dbo.Load_Bronze_Raw_To_Consolidated_With_Checks_TEST', 'P') IS NOT NULL
     DROP PROCEDURE dbo.Load_Bronze_Raw_To_Consolidated_With_Checks_TEST;
 GO
@@ -131,6 +145,7 @@ BEGIN
 
         ------------------------------------------------------------------
         -- STEP 3: Insert into Consolidated_TEST
+        -- ETL_LOAD_DATE now a direct pass-through of C.ETL_LOAD_DATE (Raw is NOT NULL)
         ------------------------------------------------------------------
         INSERT INTO dbo.Bronze_PII_Table_Consolidated_TEST
         (
@@ -161,7 +176,7 @@ BEGIN
             C.BANK_ACCOUNT_NUMBER, C.BANK_ROUTING_NUMBER,
             C.BOOL_EMPLOYEE_COMPENSATION, C.BOOL_BIOMETRIC_DATA, C.BOOL_DIGITAL_SIGNATURE,
             C.BOOL_PERSONAL_CHARACTERISTICS, C.BOOL_HEALTH_INFO, C.BOOL_END_USER_CONTRACT,
-            C.JURISDICTION, C.GEOLOCATION, ISNULL(C.ETL_LOAD_DATE, SYSDATETIME()), C.ETL_LLM_RATIONALE,
+            C.JURISDICTION, C.GEOLOCATION, C.ETL_LOAD_DATE, C.ETL_LLM_RATIONALE,
             C.BRONZE_ROW_HASH, SYSDATETIME(), @LoadedBy, C.RECORD_ID
         FROM #Checked AS C
         WHERE C.AnyHard = 0;
@@ -170,6 +185,9 @@ BEGIN
 
         ------------------------------------------------------------------
         -- STEP 4: Insert into Errors_TEST
+        -- FIX: ETL_LOAD_DATE added to column list + SELECT as a direct
+        -- pass-through of C.ETL_LOAD_DATE (was missing entirely, causing
+        -- error 515 since the column is NOT NULL with no default)
         ------------------------------------------------------------------
         INSERT INTO dbo.Bronze_PII_Errors_TEST
         (
@@ -182,7 +200,7 @@ BEGIN
             MILITARY_ID, GOVERNMENT_ID, BANK_ACCOUNT_NUMBER, BANK_ROUTING_NUMBER,
             BOOL_EMPLOYEE_COMPENSATION, BOOL_BIOMETRIC_DATA, BOOL_DIGITAL_SIGNATURE,
             BOOL_PERSONAL_CHARACTERISTICS, BOOL_HEALTH_INFO, BOOL_END_USER_CONTRACT, RECORD_ID,
-            JURISDICTION, GEOLOCATION, ETL_TOOLKIT, BATCH_CODE, ETL_LOADED_BY, BRONZE_ROW_HASH,
+            JURISDICTION, GEOLOCATION, ETL_TOOLKIT, BATCH_CODE, ETL_LOADED_BY, ETL_LOAD_DATE, BRONZE_ROW_HASH,
             BRONZE_RAW_LOAD_DATE, BRONZE_RAW_LOADED_BY, ERROR_TYPE, ERROR_SEVERITY, ERROR_STAGE,
             ERROR_LOAD_DATE, ERROR_LOADED_BY
         )
@@ -197,7 +215,7 @@ BEGIN
             C.MILITARY_ID, C.GOVERNMENT_ID, C.BANK_ACCOUNT_NUMBER, C.BANK_ROUTING_NUMBER,
             C.BOOL_EMPLOYEE_COMPENSATION, C.BOOL_BIOMETRIC_DATA, C.BOOL_DIGITAL_SIGNATURE,
             C.BOOL_PERSONAL_CHARACTERISTICS, C.BOOL_HEALTH_INFO, C.BOOL_END_USER_CONTRACT, C.RECORD_ID,
-            C.JURISDICTION, C.GEOLOCATION, C.ETL_TOOLKIT, C.BATCH_CODE, C.ETL_LOADED_BY, C.BRONZE_ROW_HASH,
+            C.JURISDICTION, C.GEOLOCATION, C.ETL_TOOLKIT, C.BATCH_CODE, C.ETL_LOADED_BY, C.ETL_LOAD_DATE, C.BRONZE_ROW_HASH,
             C.BRONZE_RAW_LOAD_DATE, C.BRONZE_RAW_LOADED_BY,
             ET.ErrorType, N'Hard', N'Bronze', SYSDATETIME(), @LoadedBy
         FROM #Checked AS C
