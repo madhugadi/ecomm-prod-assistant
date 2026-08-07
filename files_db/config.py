@@ -22,7 +22,7 @@ BEGIN
             ADD PERSON_EMAIL_CLEANED NVARCHAR(500) NULL;
         END
 
-        -- pass 1: extract candidate email (strip angle-bracket wrapper, take first of multi-email list)
+        -- pass 1: extract candidate email (strip angle-bracket wrapper, take first of multi-email list - comma or semicolon separated)
         -- run via dynamic SQL so the column added above is resolved at runtime, not at proc compile time
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
@@ -32,8 +32,8 @@ BEGIN
                     WHEN PERSON_EMAIL LIKE ''%<%@%>%''
                         THEN SUBSTRING(PERSON_EMAIL, CHARINDEX(''<'', PERSON_EMAIL) + 1,
                              CHARINDEX(''>'', PERSON_EMAIL) - CHARINDEX(''<'', PERSON_EMAIL) - 1)
-                    WHEN PERSON_EMAIL LIKE ''%,%'' AND PERSON_EMAIL LIKE ''%@%''
-                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('','', PERSON_EMAIL) - 1)))
+                    WHEN (PERSON_EMAIL LIKE ''%,%'' OR PERSON_EMAIL LIKE ''%;%'') AND PERSON_EMAIL LIKE ''%@%''
+                        THEN LTRIM(RTRIM(LEFT(REPLACE(PERSON_EMAIL, '';'', '',''), CHARINDEX('','', REPLACE(PERSON_EMAIL, '';'', '','')) - 1)))
                     ELSE PERSON_EMAIL
                 END;
         ');
