@@ -1,8 +1,8 @@
-IF OBJECT_ID('dbo.sp_Cleanse_Address_BronzeConsolidated', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Cleanse_Address_BronzeConsolidated;
+IF OBJECT_ID('dbo.sp_Cleanse_Email_Address_BronzeConsolidated', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Cleanse_Email_Address_BronzeConsolidated;
 GO
 
-CREATE PROCEDURE [dbo].[sp_Cleanse_Address_BronzeConsolidated]
+CREATE PROCEDURE [dbo].[sp_Cleanse_Email_Address_BronzeConsolidated]
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -11,7 +11,10 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- add new columns if not exists
+        -- add PWC columns if not exists
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_EMAIL')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_EMAIL NVARCHAR(500) NULL;
+
         IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_FULL')
             ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_FULL NVARCHAR(1000) NULL;
 
@@ -27,9 +30,34 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_ZIP')
             ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_ZIP NVARCHAR(50) NULL;
 
-        ------------------------------------------------------------------
-        -- PERSON_ADDRESS_FULL: URL junk, '#N/A', single-character -> NULL
-        ------------------------------------------------------------------
+        -- PERSON_EMAIL: extract candidate (angle-bracket, then first of comma/semicolon/"and"/space separated list), null if no @
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_EMAIL =
+                CASE
+                    WHEN PERSON_EMAIL = ''[none]'' THEN NULL
+                    WHEN PERSON_EMAIL LIKE ''%<%@%>%''
+                        THEN SUBSTRING(PERSON_EMAIL, CHARINDEX(''<'', PERSON_EMAIL) + 1,
+                             CHARINDEX(''>'', PERSON_EMAIL) - CHARINDEX(''<'', PERSON_EMAIL) - 1)
+                    WHEN PERSON_EMAIL LIKE ''%,%''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('','', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''%;%''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('';'', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''% and %''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' and '', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''% %''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' '', PERSON_EMAIL) - 1)))
+                    ELSE PERSON_EMAIL
+                END;
+        ');
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_EMAIL = NULL
+            WHERE PWC_PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_EMAIL)) <> ''''
+              AND PWC_PERSON_EMAIL NOT LIKE ''%@%'';
+        ');
+
+        -- PERSON_ADDRESS_FULL: url junk, #N/A, single-char -> null
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
             SET PWC_PERSON_ADDRESS_FULL =
@@ -41,10 +69,7 @@ BEGIN
                 END;
         ');
 
-        ------------------------------------------------------------------
-        -- PERSON_ADDRESS_STATE: numeric-only, hex, backslash-path,
-        -- scientific notation, single-character -> NULL
-        ------------------------------------------------------------------
+        -- PERSON_ADDRESS_STATE: numeric-only, hex, backslash, sci-notation, single-char, known junk keywords -> null
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
             SET PWC_PERSON_ADDRESS_STATE =
@@ -64,10 +89,7 @@ BEGIN
                 END;
         ');
 
-        ------------------------------------------------------------------
-        -- PERSON_ADDRESS_CITY: numeric-only, hex, backslash-path,
-        -- scientific notation, single-character -> NULL
-        ------------------------------------------------------------------
+        -- PERSON_ADDRESS_CITY: same rules as state
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
             SET PWC_PERSON_ADDRESS_CITY =
@@ -87,10 +109,7 @@ BEGIN
                 END;
         ');
 
-        ------------------------------------------------------------------
-        -- PERSON_ADDRESS_STREET: numeric-only, hex, backslash-path,
-        -- scientific notation, single-character -> NULL
-        ------------------------------------------------------------------
+        -- PERSON_ADDRESS_STREET: same rules as state
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
             SET PWC_PERSON_ADDRESS_STREET =
@@ -110,10 +129,7 @@ BEGIN
                 END;
         ');
 
-        ------------------------------------------------------------------
-        -- PERSON_ADDRESS_ZIP: hex, backslash-path, scientific notation,
-        -- single-character -> NULL (numeric-only NOT excluded here - valid zips are numeric)
-        ------------------------------------------------------------------
+        -- PERSON_ADDRESS_ZIP: hex, backslash, sci-notation, single-char -> null (numeric kept, valid zips are numeric)
         EXEC(N'
             UPDATE dbo.Bronze_PII_Table_Consolidated
             SET PWC_PERSON_ADDRESS_ZIP =
