@@ -1,53 +1,182 @@
-DECLARE @Total BIGINT = (SELECT COUNT(*) FROM dbo.Bronze_PII_Table_Consolidated);
+IF OBJECT_ID('dbo.sp_Cleanse_Email_Address_BronzeConsolidated', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Cleanse_Email_Address_BronzeConsolidated;
+GO
 
-SELECT 'FILE_NAME' AS FieldName, COUNT(*) AS PopulatedCount, @Total AS TotalRecords FROM dbo.Bronze_PII_Table_Consolidated WHERE FILE_NAME IS NOT NULL AND LTRIM(RTRIM(FILE_NAME)) <> ''
-UNION ALL SELECT 'RECORD_TYPE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE RECORD_TYPE IS NOT NULL AND LTRIM(RTRIM(RECORD_TYPE)) <> ''
-UNION ALL SELECT 'BOOL_PERSONAL_DATA', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_PERSONAL_DATA IS NOT NULL
-UNION ALL SELECT 'PERSON_FULL_NAME', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_FULL_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_FULL_NAME)) <> ''
-UNION ALL SELECT 'PERSON_FIRST_NAME', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_FIRST_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_FIRST_NAME)) <> ''
-UNION ALL SELECT 'PERSON_MIDDLE_NAME', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_MIDDLE_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_MIDDLE_NAME)) <> ''
-UNION ALL SELECT 'PERSON_LAST_NAME', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_LAST_NAME IS NOT NULL AND LTRIM(RTRIM(PERSON_LAST_NAME)) <> ''
-UNION ALL SELECT 'PERSON_SUFFIX', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_SUFFIX IS NOT NULL AND LTRIM(RTRIM(PERSON_SUFFIX)) <> ''
-UNION ALL SELECT 'PERSON_ID', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ID IS NOT NULL AND LTRIM(RTRIM(PERSON_ID)) <> ''
-UNION ALL SELECT 'PERSON_ID_TYPE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ID_TYPE IS NOT NULL AND LTRIM(RTRIM(PERSON_ID_TYPE)) <> ''
-UNION ALL SELECT 'PERSON_EMAIL', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PERSON_EMAIL)) <> ''
-UNION ALL SELECT 'PWC_PERSON_EMAIL', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_EMAIL)) <> ''
-UNION ALL SELECT 'PERSON_PHONE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_PHONE IS NOT NULL AND LTRIM(RTRIM(PERSON_PHONE)) <> ''
-UNION ALL SELECT 'PERSON_COMPANY', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_COMPANY IS NOT NULL AND LTRIM(RTRIM(PERSON_COMPANY)) <> ''
-UNION ALL SELECT 'PERSON_DATE_OF_BIRTH', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_DATE_OF_BIRTH IS NOT NULL
-UNION ALL SELECT 'PERSON_TAX_ID', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_TAX_ID IS NOT NULL AND LTRIM(RTRIM(PERSON_TAX_ID)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_FULL', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_FULL IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_FULL)) <> ''
-UNION ALL SELECT 'PWC_PERSON_ADDRESS_FULL', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_ADDRESS_FULL IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_ADDRESS_FULL)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_STREET', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_STREET IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_STREET)) <> ''
-UNION ALL SELECT 'PWC_PERSON_ADDRESS_STREET', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_ADDRESS_STREET IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_ADDRESS_STREET)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_LINE2', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_LINE2 IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_LINE2)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_CITY', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_CITY IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_CITY)) <> ''
-UNION ALL SELECT 'PWC_PERSON_ADDRESS_CITY', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_ADDRESS_CITY IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_ADDRESS_CITY)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_STATE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_STATE IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_STATE)) <> ''
-UNION ALL SELECT 'PWC_PERSON_ADDRESS_STATE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_ADDRESS_STATE IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_ADDRESS_STATE)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_ZIP', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_ZIP IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_ZIP)) <> ''
-UNION ALL SELECT 'PWC_PERSON_ADDRESS_ZIP', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PWC_PERSON_ADDRESS_ZIP IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_ADDRESS_ZIP)) <> ''
-UNION ALL SELECT 'PERSON_ADDRESS_COUNTRY', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PERSON_ADDRESS_COUNTRY IS NOT NULL AND LTRIM(RTRIM(PERSON_ADDRESS_COUNTRY)) <> ''
-UNION ALL SELECT 'FULL_CREDIT_CARD', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE FULL_CREDIT_CARD IS NOT NULL AND LTRIM(RTRIM(FULL_CREDIT_CARD)) <> ''
-UNION ALL SELECT 'CC_CVV', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE CC_CVV IS NOT NULL AND LTRIM(RTRIM(CC_CVV)) <> ''
-UNION ALL SELECT 'CC_EXPIRATION', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE CC_EXPIRATION IS NOT NULL AND LTRIM(RTRIM(CC_EXPIRATION)) <> ''
-UNION ALL SELECT 'USERNAME', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE USERNAME IS NOT NULL AND LTRIM(RTRIM(USERNAME)) <> ''
-UNION ALL SELECT 'PASSWORD', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PASSWORD IS NOT NULL AND LTRIM(RTRIM(PASSWORD)) <> ''
-UNION ALL SELECT 'DRIVERS_LICENSE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE DRIVERS_LICENSE IS NOT NULL AND LTRIM(RTRIM(DRIVERS_LICENSE)) <> ''
-UNION ALL SELECT 'PASSPORT', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE PASSPORT IS NOT NULL AND LTRIM(RTRIM(PASSPORT)) <> ''
-UNION ALL SELECT 'MILITARY_ID', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE MILITARY_ID IS NOT NULL AND LTRIM(RTRIM(MILITARY_ID)) <> ''
-UNION ALL SELECT 'GOVERNMENT_ID', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE GOVERNMENT_ID IS NOT NULL AND LTRIM(RTRIM(GOVERNMENT_ID)) <> ''
-UNION ALL SELECT 'BANK_ACCOUNT_NUMBER', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BANK_ACCOUNT_NUMBER IS NOT NULL AND LTRIM(RTRIM(BANK_ACCOUNT_NUMBER)) <> ''
-UNION ALL SELECT 'BANK_ROUTING_NUMBER', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BANK_ROUTING_NUMBER IS NOT NULL AND LTRIM(RTRIM(BANK_ROUTING_NUMBER)) <> ''
-UNION ALL SELECT 'BOOL_EMPLOYEE_COMPENSATION', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_EMPLOYEE_COMPENSATION IS NOT NULL
-UNION ALL SELECT 'BOOL_BIOMETRIC_DATA', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_BIOMETRIC_DATA IS NOT NULL
-UNION ALL SELECT 'BOOL_DIGITAL_SIGNATURE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_DIGITAL_SIGNATURE IS NOT NULL
-UNION ALL SELECT 'BOOL_PERSONAL_CHARACTERISTICS', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_PERSONAL_CHARACTERISTICS IS NOT NULL
-UNION ALL SELECT 'BOOL_HEALTH_INFO', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_HEALTH_INFO IS NOT NULL
-UNION ALL SELECT 'BOOL_END_USER_CONTRACT', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE BOOL_END_USER_CONTRACT IS NOT NULL
-UNION ALL SELECT 'JURISDICTION', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE JURISDICTION IS NOT NULL AND LTRIM(RTRIM(JURISDICTION)) <> ''
-UNION ALL SELECT 'GEOLOCATION', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE GEOLOCATION IS NOT NULL AND LTRIM(RTRIM(GEOLOCATION)) <> ''
-UNION ALL SELECT 'ETL_LLM_RATIONALE', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE ETL_LLM_RATIONALE IS NOT NULL AND LTRIM(RTRIM(ETL_LLM_RATIONALE)) <> ''
-UNION ALL SELECT 'RECORD_ID', COUNT(*), @Total FROM dbo.Bronze_PII_Table_Consolidated WHERE RECORD_ID IS NOT NULL AND LTRIM(RTRIM(RECORD_ID)) <> ''
+CREATE PROCEDURE [dbo].[sp_Cleanse_Email_Address_BronzeConsolidated]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
-ORDER BY PopulatedCount DESC;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- add PWC columns if not exists
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_EMAIL')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_EMAIL NVARCHAR(500) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_FULL')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_FULL NVARCHAR(1000) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_STATE')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_STATE NVARCHAR(100) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_CITY')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_CITY NVARCHAR(200) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_STREET')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_STREET NVARCHAR(500) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_ZIP')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_ZIP NVARCHAR(50) NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_COUNTRY')
+            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_COUNTRY NVARCHAR(100) NULL;
+
+        -- PERSON_EMAIL: extract candidate (angle-bracket, then first of comma/semicolon/"and"/space separated list), null if no @
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_EMAIL =
+                CASE
+                    WHEN PERSON_EMAIL = ''[none]'' THEN NULL
+                    WHEN PERSON_EMAIL LIKE ''%<%@%>%''
+                        THEN SUBSTRING(PERSON_EMAIL, CHARINDEX(''<'', PERSON_EMAIL) + 1,
+                             CHARINDEX(''>'', PERSON_EMAIL) - CHARINDEX(''<'', PERSON_EMAIL) - 1)
+                    WHEN PERSON_EMAIL LIKE ''%,%''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('','', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''%;%''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('';'', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''% and %''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' and '', PERSON_EMAIL) - 1)))
+                    WHEN PERSON_EMAIL LIKE ''% %''
+                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' '', PERSON_EMAIL) - 1)))
+                    ELSE PERSON_EMAIL
+                END;
+        ');
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_EMAIL = NULL
+            WHERE PWC_PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_EMAIL)) <> ''''
+              AND PWC_PERSON_EMAIL NOT LIKE ''%@%'';
+        ');
+
+        -- PERSON_ADDRESS_FULL: url junk, #N/A, single-char -> null
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_FULL =
+                CASE
+                    WHEN PERSON_ADDRESS_FULL LIKE ''http://%'' OR PERSON_ADDRESS_FULL LIKE ''https://%'' THEN NULL
+                    WHEN PERSON_ADDRESS_FULL = ''#N/A'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_FULL) = 1 THEN NULL
+                    ELSE PERSON_ADDRESS_FULL
+                END;
+        ');
+
+        -- PERSON_ADDRESS_STATE: numeric-only (len<5), hex, mid-string special char, sci-notation, single-char, known junk keywords -> null
+        -- special char set (mid-string only, not at edges): \ / < > { } [ ] ^ ~ ` | @ * = _
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_STATE =
+                CASE
+                    WHEN PERSON_ADDRESS_STATE NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_STATE) < 5 THEN NULL
+                    WHEN PERSON_ADDRESS_STATE LIKE ''0x%'' THEN NULL
+                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STATE) > 1
+                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STATE) < LEN(PERSON_ADDRESS_STATE) THEN NULL
+                    WHEN PERSON_ADDRESS_STATE LIKE ''%E+%'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_STATE) = 1 THEN NULL
+                    WHEN PERSON_ADDRESS_STATE IN (
+                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
+                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
+                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
+                        ''aaa.bbb.ccc.ddd'',''ewarm''
+                    ) THEN NULL
+                    ELSE PERSON_ADDRESS_STATE
+                END;
+        ');
+
+        -- PERSON_ADDRESS_CITY: same rules as state
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_CITY =
+                CASE
+                    WHEN PERSON_ADDRESS_CITY NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_CITY) < 5 THEN NULL
+                    WHEN PERSON_ADDRESS_CITY LIKE ''0x%'' THEN NULL
+                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_CITY) > 1
+                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_CITY) < LEN(PERSON_ADDRESS_CITY) THEN NULL
+                    WHEN PERSON_ADDRESS_CITY LIKE ''%E+%'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_CITY) = 1 THEN NULL
+                    WHEN PERSON_ADDRESS_CITY IN (
+                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
+                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
+                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
+                        ''aaa.bbb.ccc.ddd'',''ewarm''
+                    ) THEN NULL
+                    ELSE PERSON_ADDRESS_CITY
+                END;
+        ');
+
+        -- PERSON_ADDRESS_STREET: same rules as state
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_STREET =
+                CASE
+                    WHEN PERSON_ADDRESS_STREET NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_STREET) < 5 THEN NULL
+                    WHEN PERSON_ADDRESS_STREET LIKE ''0x%'' THEN NULL
+                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STREET) > 1
+                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STREET) < LEN(PERSON_ADDRESS_STREET) THEN NULL
+                    WHEN PERSON_ADDRESS_STREET LIKE ''%E+%'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_STREET) = 1 THEN NULL
+                    WHEN PERSON_ADDRESS_STREET IN (
+                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
+                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
+                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
+                        ''aaa.bbb.ccc.ddd'',''ewarm''
+                    ) THEN NULL
+                    ELSE PERSON_ADDRESS_STREET
+                END;
+        ');
+
+        -- PERSON_ADDRESS_ZIP: hex, mid-string special char, sci-notation, single-char -> null (numeric kept, valid zips are numeric)
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_ZIP =
+                CASE
+                    WHEN PERSON_ADDRESS_ZIP LIKE ''0x%'' THEN NULL
+                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_ZIP) > 1
+                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_ZIP) < LEN(PERSON_ADDRESS_ZIP) THEN NULL
+                    WHEN PERSON_ADDRESS_ZIP LIKE ''%E+%'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_ZIP) = 1 THEN NULL
+                    ELSE PERSON_ADDRESS_ZIP
+                END;
+        ');
+
+        -- PERSON_ADDRESS_COUNTRY: numeric-only (len<5), hex, mid-string special char, sci-notation, single-char, known junk keywords -> null
+        EXEC(N'
+            UPDATE dbo.Bronze_PII_Table_Consolidated
+            SET PWC_PERSON_ADDRESS_COUNTRY =
+                CASE
+                    WHEN PERSON_ADDRESS_COUNTRY NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_COUNTRY) < 5 THEN NULL
+                    WHEN PERSON_ADDRESS_COUNTRY LIKE ''0x%'' THEN NULL
+                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_COUNTRY) > 1
+                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_COUNTRY) < LEN(PERSON_ADDRESS_COUNTRY) THEN NULL
+                    WHEN PERSON_ADDRESS_COUNTRY LIKE ''%E+%'' THEN NULL
+                    WHEN LEN(PERSON_ADDRESS_COUNTRY) = 1 THEN NULL
+                    WHEN PERSON_ADDRESS_COUNTRY IN (
+                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
+                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
+                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
+                        ''aaa.bbb.ccc.ddd'',''ewarm''
+                    ) THEN NULL
+                    ELSE PERSON_ADDRESS_COUNTRY
+                END;
+        ');
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
