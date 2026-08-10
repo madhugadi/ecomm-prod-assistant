@@ -1,182 +1,33 @@
-IF OBJECT_ID('dbo.sp_Cleanse_Email_Address_BronzeConsolidated', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Cleanse_Email_Address_BronzeConsolidated;
-GO
+-- Step 1: How many audit table emails actually match a Consolidated record at all?
+SELECT COUNT(DISTINCT a.Employee_ID) AS AuditRowsWithAnyMatch
+FROM dbo.ITR_Work_Home_Address_Audit a
+WHERE EXISTS (
+    SELECT 1 FROM dbo.Bronze_PII_Table_Consolidated c
+    WHERE c.PERSON_EMAIL = a.Email_Work
+       OR c.PERSON_EMAIL = a.Email_Home
+       OR c.PWC_PERSON_EMAIL = a.Email_Work
+       OR c.PWC_PERSON_EMAIL = a.Email_Home
+);
 
-CREATE PROCEDURE [dbo].[sp_Cleanse_Email_Address_BronzeConsolidated]
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
+-- Step 2: Of those matches, how many Consolidated records currently have NULL address fields
+-- that the audit table could actually fill in?
+SELECT COUNT(*) AS FillableRecords
+FROM dbo.Bronze_PII_Table_Consolidated c
+JOIN dbo.ITR_Work_Home_Address_Audit a
+    ON a.Email_Work = c.PERSON_EMAIL OR a.Email_Home = c.PERSON_EMAIL
+    OR a.Email_Work = c.PWC_PERSON_EMAIL OR a.Email_Home = c.PWC_PERSON_EMAIL
+WHERE (c.PWC_PERSON_ADDRESS_CITY IS NULL AND a.City IS NOT NULL)
+   OR (c.PWC_PERSON_ADDRESS_STATE IS NULL AND a.State IS NOT NULL)
+   OR (c.PWC_PERSON_ADDRESS_COUNTRY IS NULL AND a.Primary_Home_Address_Country IS NOT NULL);
 
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        -- add PWC columns if not exists
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_EMAIL')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_EMAIL NVARCHAR(500) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_FULL')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_FULL NVARCHAR(1000) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_STATE')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_STATE NVARCHAR(100) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_CITY')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_CITY NVARCHAR(200) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_STREET')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_STREET NVARCHAR(500) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_ZIP')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_ZIP NVARCHAR(50) NULL;
-
-        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Bronze_PII_Table_Consolidated') AND name = 'PWC_PERSON_ADDRESS_COUNTRY')
-            ALTER TABLE dbo.Bronze_PII_Table_Consolidated ADD PWC_PERSON_ADDRESS_COUNTRY NVARCHAR(100) NULL;
-
-        -- PERSON_EMAIL: extract candidate (angle-bracket, then first of comma/semicolon/"and"/space separated list), null if no @
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_EMAIL =
-                CASE
-                    WHEN PERSON_EMAIL = ''[none]'' THEN NULL
-                    WHEN PERSON_EMAIL LIKE ''%<%@%>%''
-                        THEN SUBSTRING(PERSON_EMAIL, CHARINDEX(''<'', PERSON_EMAIL) + 1,
-                             CHARINDEX(''>'', PERSON_EMAIL) - CHARINDEX(''<'', PERSON_EMAIL) - 1)
-                    WHEN PERSON_EMAIL LIKE ''%,%''
-                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('','', PERSON_EMAIL) - 1)))
-                    WHEN PERSON_EMAIL LIKE ''%;%''
-                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('';'', PERSON_EMAIL) - 1)))
-                    WHEN PERSON_EMAIL LIKE ''% and %''
-                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' and '', PERSON_EMAIL) - 1)))
-                    WHEN PERSON_EMAIL LIKE ''% %''
-                        THEN LTRIM(RTRIM(LEFT(PERSON_EMAIL, CHARINDEX('' '', PERSON_EMAIL) - 1)))
-                    ELSE PERSON_EMAIL
-                END;
-        ');
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_EMAIL = NULL
-            WHERE PWC_PERSON_EMAIL IS NOT NULL AND LTRIM(RTRIM(PWC_PERSON_EMAIL)) <> ''''
-              AND PWC_PERSON_EMAIL NOT LIKE ''%@%'';
-        ');
-
-        -- PERSON_ADDRESS_FULL: url junk, #N/A, single-char -> null
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_FULL =
-                CASE
-                    WHEN PERSON_ADDRESS_FULL LIKE ''http://%'' OR PERSON_ADDRESS_FULL LIKE ''https://%'' THEN NULL
-                    WHEN PERSON_ADDRESS_FULL = ''#N/A'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_FULL) = 1 THEN NULL
-                    ELSE PERSON_ADDRESS_FULL
-                END;
-        ');
-
-        -- PERSON_ADDRESS_STATE: numeric-only (len<5), hex, mid-string special char, sci-notation, single-char, known junk keywords -> null
-        -- special char set (mid-string only, not at edges): \ / < > { } [ ] ^ ~ ` | @ * = _
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_STATE =
-                CASE
-                    WHEN PERSON_ADDRESS_STATE NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_STATE) < 5 THEN NULL
-                    WHEN PERSON_ADDRESS_STATE LIKE ''0x%'' THEN NULL
-                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STATE) > 1
-                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STATE) < LEN(PERSON_ADDRESS_STATE) THEN NULL
-                    WHEN PERSON_ADDRESS_STATE LIKE ''%E+%'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_STATE) = 1 THEN NULL
-                    WHEN PERSON_ADDRESS_STATE IN (
-                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
-                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
-                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
-                        ''aaa.bbb.ccc.ddd'',''ewarm''
-                    ) THEN NULL
-                    ELSE PERSON_ADDRESS_STATE
-                END;
-        ');
-
-        -- PERSON_ADDRESS_CITY: same rules as state
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_CITY =
-                CASE
-                    WHEN PERSON_ADDRESS_CITY NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_CITY) < 5 THEN NULL
-                    WHEN PERSON_ADDRESS_CITY LIKE ''0x%'' THEN NULL
-                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_CITY) > 1
-                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_CITY) < LEN(PERSON_ADDRESS_CITY) THEN NULL
-                    WHEN PERSON_ADDRESS_CITY LIKE ''%E+%'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_CITY) = 1 THEN NULL
-                    WHEN PERSON_ADDRESS_CITY IN (
-                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
-                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
-                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
-                        ''aaa.bbb.ccc.ddd'',''ewarm''
-                    ) THEN NULL
-                    ELSE PERSON_ADDRESS_CITY
-                END;
-        ');
-
-        -- PERSON_ADDRESS_STREET: same rules as state
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_STREET =
-                CASE
-                    WHEN PERSON_ADDRESS_STREET NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_STREET) < 5 THEN NULL
-                    WHEN PERSON_ADDRESS_STREET LIKE ''0x%'' THEN NULL
-                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STREET) > 1
-                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_STREET) < LEN(PERSON_ADDRESS_STREET) THEN NULL
-                    WHEN PERSON_ADDRESS_STREET LIKE ''%E+%'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_STREET) = 1 THEN NULL
-                    WHEN PERSON_ADDRESS_STREET IN (
-                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
-                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
-                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
-                        ''aaa.bbb.ccc.ddd'',''ewarm''
-                    ) THEN NULL
-                    ELSE PERSON_ADDRESS_STREET
-                END;
-        ');
-
-        -- PERSON_ADDRESS_ZIP: hex, mid-string special char, sci-notation, single-char -> null (numeric kept, valid zips are numeric)
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_ZIP =
-                CASE
-                    WHEN PERSON_ADDRESS_ZIP LIKE ''0x%'' THEN NULL
-                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_ZIP) > 1
-                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_ZIP) < LEN(PERSON_ADDRESS_ZIP) THEN NULL
-                    WHEN PERSON_ADDRESS_ZIP LIKE ''%E+%'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_ZIP) = 1 THEN NULL
-                    ELSE PERSON_ADDRESS_ZIP
-                END;
-        ');
-
-        -- PERSON_ADDRESS_COUNTRY: numeric-only (len<5), hex, mid-string special char, sci-notation, single-char, known junk keywords -> null
-        EXEC(N'
-            UPDATE dbo.Bronze_PII_Table_Consolidated
-            SET PWC_PERSON_ADDRESS_COUNTRY =
-                CASE
-                    WHEN PERSON_ADDRESS_COUNTRY NOT LIKE ''%[^0-9]%'' AND LEN(PERSON_ADDRESS_COUNTRY) < 5 THEN NULL
-                    WHEN PERSON_ADDRESS_COUNTRY LIKE ''0x%'' THEN NULL
-                    WHEN PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_COUNTRY) > 1
-                         AND PATINDEX(''%[]<>{}[^~`|@*=_\/]%'', PERSON_ADDRESS_COUNTRY) < LEN(PERSON_ADDRESS_COUNTRY) THEN NULL
-                    WHEN PERSON_ADDRESS_COUNTRY LIKE ''%E+%'' THEN NULL
-                    WHEN LEN(PERSON_ADDRESS_COUNTRY) = 1 THEN NULL
-                    WHEN PERSON_ADDRESS_COUNTRY IN (
-                        ''main'',''Stable'',''DATA'',''.text'',''###Uninitialized###'',''###Unitialized###'',
-                        '',,,,(default),'',''Full formatting.'',''experimental'',''templproj.txt'',''templproj.a43'',
-                        ''Ink0t.xcl'',''Ink0t.icf'',''XX'',''Son.'',''Pa050'',''ePLACED'',''ACTIVE'',
-                        ''aaa.bbb.ccc.ddd'',''ewarm''
-                    ) THEN NULL
-                    ELSE PERSON_ADDRESS_COUNTRY
-                END;
-        ');
-
-        COMMIT TRANSACTION;
-
-    END TRY
-    BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
+-- Step 3: Sample the actual matched rows so we can eyeball data quality
+SELECT TOP 30
+    c.PERSON_EMAIL, c.PWC_PERSON_EMAIL,
+    c.PWC_PERSON_ADDRESS_CITY, a.City,
+    c.PWC_PERSON_ADDRESS_STATE, a.State,
+    c.PWC_PERSON_ADDRESS_COUNTRY, a.Primary_Home_Address_Country
+FROM dbo.Bronze_PII_Table_Consolidated c
+JOIN dbo.ITR_Work_Home_Address_Audit a
+    ON a.Email_Work = c.PERSON_EMAIL OR a.Email_Home = c.PERSON_EMAIL
+    OR a.Email_Work = c.PWC_PERSON_EMAIL OR a.Email_Home = c.PWC_PERSON_EMAIL
+ORDER BY NEWID();
